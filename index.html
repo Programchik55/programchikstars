@@ -1,9 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>My App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programchik Stars</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad-adsgram.min.js"></script>
+    <style>
+        body {
+            background-color: #1c1d22;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .card {
+            background: #2b2d35;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .stars-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .balance {
+            font-size: 32px;
+            font-weight: bold;
+            color: #f5c542;
+            margin: 10px 0;
+        }
+        .btn {
+            background: #2481cc;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.98);
+            background: #1b68a6;
+        }
+        .btn-withdraw {
+            background: #31b057;
+        }
+    </style>
 </head>
 <body>
-    <h1>Скоро здесь будет мини-апп!</h1>
+
+    <div class="card">
+        <div class="stars-icon">⭐</div>
+        <h2>Programchik Stars</h2>
+        <p>Твой баланс:</p>
+        <div class="balance"><span id="stars-count">0</span> Stars</div>
+        
+        <button class="btn" onclick="watchAd()">🎬 Посмотреть рекламу (+1 Star)</button>
+        <button class="btn btn-withdraw" onclick="withdraw()">💸 Вывести Stars</button>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Развернуть на весь экран
+
+        let balance = 0;
+
+        // Инициализация Adsgram (Замени 'YOUR_BLOCK_ID' на свой ID из Adsgram.ai)
+        let AdController;
+        try {
+            AdController = window.Adsgram.init({ blockId: "YOUR_BLOCK_ID" });
+        } catch(e) {
+            console.log("Adsgram не подключен");
+        }
+
+        function watchAd() {
+            if (AdController) {
+                AdController.show().then((result) => {
+                    // Успешный просмотр
+                    balance += 1;
+                    document.getElementById('stars-count').innerText = balance;
+                    tg.showAlert("Отлично! Тебе начислено 1 Star ⭐");
+                }).catch((error) => {
+                    tg.showAlert("Реклама не досмотрена или недоступна.");
+                });
+            } else {
+                // Временный демо-режим, если Adsgram еще не настроен
+                balance += 1;
+                document.getElementById('stars-count').innerText = balance;
+                tg.showAlert("Демо-режим: Начислена 1 Star ⭐");
+            }
+        }
+
+        function withdraw() {
+            if (balance < 15) {
+                tg.showAlert("Минимальная сумма вывода — 15 Stars ⭐");
+            } else {
+                tg.showAlert("Заявка на вывод отправлена! Ожидай начисления.");
+            }
+        }
+    </script>
 </body>
 </html>
+ 
