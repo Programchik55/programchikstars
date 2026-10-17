@@ -78,44 +78,58 @@
     <script>
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть на весь экран
+        tg.expand();
 
-        let balance = 0;
+        // Получаем Telegram ID пользователя
+        const userId = tg.initDataUnsafe?.user?.id || "demo_user";
 
-        // Инициализация Adsgram (Замени 'YOUR_BLOCK_ID' на свой ID из Adsgram.ai)
+        // Инициализация Adsgram
         let AdController;
         try {
-            AdController = window.Adsgram.init({ blockId: "54505" });
+            AdController = window.Adsgram.init({ 
+                blockId: "54505",
+                debug: false
+            });
         } catch(e) {
-            console.log("Adsgram не подключен");
+            console.log("Ошибка инициализации Adsgram:", e);
+        }
+
+        // Загрузка баланса с сервера
+        async function loadBalance() {
+            try {
+                const res = await fetch(`https://prgrmchikstars-server.onrender.com/api/get-balance/${userId}`);
+                const data = await res.json();
+                document.getElementById('stars-count').innerText = data.balance;
+            } catch(e) {
+                console.log("Ошибка загрузки баланса:", e);
+            }
         }
 
         function watchAd() {
             if (AdController) {
                 AdController.show().then((result) => {
-                    // Успешный просмотр
-                    balance += 1;
-                    document.getElementById('stars-count').innerText = balance;
-                    tg.showAlert("Отлично! Тебе начислено 1 Star ⭐");
+                    // После просмотра перезагружаем баланс через 2 секунды, пока сервер обработает награду
+                    setTimeout(loadBalance, 2000);
+                    tg.showAlert("Отлично! Награда зачисляется ⭐");
                 }).catch((error) => {
-                    tg.showAlert("Реклама не досмотрена или недоступна.");
+                    tg.showAlert("Реклама не досмотрена или пока недоступна.");
                 });
             } else {
-                // Временный демо-режим, если Adsgram еще не настроен
-                balance += 1;
-                document.getElementById('stars-count').innerText = balance;
-                tg.showAlert("Демо-режим: Начислена 1 Star ⭐");
+                tg.showAlert("Ошибка подключения к рекламной сети.");
             }
         }
 
         function withdraw() {
-            if (balance < 15) {
+            const currentBalance = parseInt(document.getElementById('stars-count').innerText);
+            if (currentBalance < 15) {
                 tg.showAlert("Минимальная сумма вывода — 15 Stars ⭐");
             } else {
                 tg.showAlert("Заявка на вывод отправлена! Ожидай начисления.");
             }
         }
+
+        // Первичная загрузка баланса
+        loadBalance();
     </script>
 </body>
 </html>
- 
