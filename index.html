@@ -6,8 +6,6 @@
     <title>Programchik Stars</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Adsgram SDK -->
-    <script src="https://sad.adsgram.ai/js/sad-adsgram.min.js"></script>
     <style>
         body {
             background-color: #1c1d22;
@@ -70,6 +68,16 @@
         <button class="btn btn-withdraw" onclick="withdraw()">💸 Вывести Stars</button>
     </div>
 
+    <!-- Динамическая загрузка Adsgram SDK -->
+    <script>
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'https://sad.adsgram.ai/js/sad-adsgram.min.js';
+            script.async = true;
+            document.head.appendChild(script);
+        })();
+    </script>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -87,23 +95,23 @@
         }
 
         function watchAd() {
-            try {
-                if (!window.Adsgram) {
-                    tg.showAlert("Ошибка: Библиотека Adsgram не загрузилась (возможно, блокирует VPN/Интернет)");
-                    return;
-                }
+            if (!window.Adsgram) {
+                tg.showAlert("Рекламная библиотека еще загружается или блокируется сетью. Проверь интернет/VPN.");
+                return;
+            }
 
+            try {
                 const adController = window.Adsgram.init({ blockId: "54505" });
                 
                 adController.show().then((result) => {
                     setTimeout(loadBalance, 2000);
                     tg.showAlert("Реклама просмотрена! Награда зачисляется ⭐");
                 }).catch((error) => {
-                    tg.showAlert("Ошибка рекламы: " + JSON.stringify(error));
+                    tg.showAlert("Реклама закрыта или недоступна: " + JSON.stringify(error));
                 });
 
             } catch (err) {
-                tg.showAlert("Критическая ошибка: " + err.message);
+                tg.showAlert("Ошибка запуска рекламы: " + err.message);
             }
         }
 
