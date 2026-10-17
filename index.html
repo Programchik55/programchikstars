@@ -52,11 +52,6 @@
             width: 100%;
             margin-top: 15px;
             cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
-        }
-        .btn:active {
-            transform: scale(0.98);
-            background: #1b68a6;
         }
         .btn-withdraw {
             background: #31b057;
@@ -81,18 +76,6 @@
 
         const userId = tg.initDataUnsafe?.user?.id || "demo_user";
 
-        let AdController = null;
-
-        window.addEventListener('load', () => {
-            try {
-                if (window.Adsgram) {
-                    AdController = window.Adsgram.init({ blockId: "54505" });
-                }
-            } catch(e) {
-                console.log("Adsgram init error:", e);
-            }
-        });
-
         async function loadBalance() {
             try {
                 const res = await fetch(`https://prgrmchikstars-server.onrender.com/api/get-balance/${userId}`);
@@ -104,21 +87,23 @@
         }
 
         function watchAd() {
-            if (!AdController) {
-                try {
-                    AdController = window.Adsgram.init({ blockId: "54505" });
-                } catch(e) {}
-            }
+            try {
+                if (!window.Adsgram) {
+                    tg.showAlert("Ошибка: Библиотека Adsgram не загрузилась (возможно, блокирует VPN/Интернет)");
+                    return;
+                }
 
-            if (AdController) {
-                AdController.show().then((result) => {
+                const adController = window.Adsgram.init({ blockId: "54505" });
+                
+                adController.show().then((result) => {
                     setTimeout(loadBalance, 2000);
-                    tg.showAlert("Реклама просмотрена! Награда скоро обновится ⭐");
+                    tg.showAlert("Реклама просмотрена! Награда зачисляется ⭐");
                 }).catch((error) => {
-                    tg.showAlert("Реклама закрыта или не загрузилась.");
+                    tg.showAlert("Ошибка рекламы: " + JSON.stringify(error));
                 });
-            } else {
-                tg.showAlert("Ошибка подключения к рекламной сети.");
+
+            } catch (err) {
+                tg.showAlert("Критическая ошибка: " + err.message);
             }
         }
 
