@@ -76,25 +76,23 @@
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Получаем Telegram ID пользователя
         const userId = tg.initDataUnsafe?.user?.id || "demo_user";
 
-        // Инициализация Adsgram
-        let AdController;
-        try {
-            AdController = window.Adsgram.init({ 
-                blockId: "54505",
-                debug: false
-            });
-        } catch(e) {
-            console.log("Ошибка инициализации Adsgram:", e);
-        }
+        let AdController = null;
 
-        // Загрузка баланса с сервера
+        window.addEventListener('load', () => {
+            try {
+                if (window.Adsgram) {
+                    AdController = window.Adsgram.init({ blockId: "54505" });
+                }
+            } catch(e) {
+                console.log("Adsgram init error:", e);
+            }
+        });
+
         async function loadBalance() {
             try {
                 const res = await fetch(`https://prgrmchikstars-server.onrender.com/api/get-balance/${userId}`);
@@ -106,13 +104,18 @@
         }
 
         function watchAd() {
+            if (!AdController) {
+                try {
+                    AdController = window.Adsgram.init({ blockId: "54505" });
+                } catch(e) {}
+            }
+
             if (AdController) {
                 AdController.show().then((result) => {
-                    // После просмотра перезагружаем баланс через 2 секунды, пока сервер обработает награду
                     setTimeout(loadBalance, 2000);
-                    tg.showAlert("Отлично! Награда зачисляется ⭐");
+                    tg.showAlert("Реклама просмотрена! Награда скоро обновится ⭐");
                 }).catch((error) => {
-                    tg.showAlert("Реклама не досмотрена или пока недоступна.");
+                    tg.showAlert("Реклама закрыта или не загрузилась.");
                 });
             } else {
                 tg.showAlert("Ошибка подключения к рекламной сети.");
@@ -124,11 +127,10 @@
             if (currentBalance < 15) {
                 tg.showAlert("Минимальная сумма вывода — 15 Stars ⭐");
             } else {
-                tg.showAlert("Заявка на вывод отправлена! Ожидай начисления.");
+                tg.showAlert("Заявка на вывод отправлена!");
             }
         }
 
-        // Первичная загрузка баланса
         loadBalance();
     </script>
 </body>
