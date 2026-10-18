@@ -81,7 +81,7 @@
 
         const userId = tg.initDataUnsafe?.user?.id || "demo_user";
 
-        // Функция загрузки баланса с сервера
+        // Загрузка баланса с сервера на Render
         async function loadBalance() {
             try {
                 const res = await fetch(`https://prgrmchikstars-server.onrender.com/api/get-balance/${userId}`);
@@ -92,11 +92,11 @@
             }
         }
 
-        // Функция показа рекламы Monetag
+        // Показ рекламы Monetag
         function watchAd() {
             if (typeof show_12060382 === 'function') {
                 show_12060382().then(() => {
-                    // После успешного просмотра отправляем запрос на сервер Render для начисления +1 Star
+                    // Запрос на сервер для начисления звезды
                     fetch(`https://prgrmchikstars-server.onrender.com/api/adsgram-reward?userid=${userId}`)
                         .then(() => {
                             setTimeout(loadBalance, 1500);
@@ -104,7 +104,7 @@
                         })
                         .catch(err => {
                             console.error("Ошибка сервера:", err);
-                            tg.showAlert("Реклама просмотрена, но ошибка на сервере.");
+                            tg.showAlert("Реклама просмотрена, но сервер не ответил.");
                         });
                 }).catch((error) => {
                     tg.showAlert("Реклама была закрыта или недоступна.");
@@ -114,7 +114,6 @@
             }
         }
 
-        // Функция вывода средств
         function withdraw() {
             const currentBalance = parseInt(document.getElementById('stars-count').innerText);
             if (currentBalance < 15) {
@@ -124,8 +123,8 @@
             }
         }
 
-        // Загружаем баланс при открытии
         loadBalance();
     </script>
 </body>
 </html>
+ 
