@@ -6,8 +6,13 @@
     <title>Programchik Stars</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad-index.js"></script>
+    
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='12060382' data-sdk='show_12060382'></script>
+
     <style>
         body {
             background-color: #1c1d22;
@@ -46,20 +51,26 @@
             color: white;
             border: none;
             padding: 14px 20px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 12px;
             width: 100%;
-            margin-top: 15px;
+            margin-top: 12px;
             cursor: pointer;
             transition: transform 0.1s, background 0.2s;
         }
         .btn:active {
             transform: scale(0.98);
-            background: #1b68a6;
+        }
+        .btn-adsgram {
+            background: #2481cc;
+        }
+        .btn-monetag {
+            background: #6c5ce7;
         }
         .btn-withdraw {
             background: #31b057;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -69,9 +80,12 @@
         <div class="stars-icon">⭐</div>
         <h2>Programchik Stars</h2>
         <p>Твой баланс:</p>
-        <div class="balance"><span id="stars-count">0</span> Stars</div>
+        <div class="balance"><span id="stars-count">...</span> Stars</div>
         
-        <button class="btn" onclick="watchAd()">🎬 Посмотреть рекламу (+1 Star)</button>
+        <!-- Кнопки для двух рекламных сетей -->
+        <button class="btn btn-adsgram" onclick="watchAdsgram()">🎬 Смотреть Adsgram (+1 Star)</button>
+        <button class="btn btn-monetag" onclick="watchMonetag()">🎬 Смотреть Monetag (+1 Star)</button>
+        
         <button class="btn btn-withdraw" onclick="withdraw()">💸 Вывести Stars</button>
     </div>
 
@@ -81,50 +95,83 @@
 
         const userId = tg.initDataUnsafe?.user?.id || "demo_user";
 
-        // Загрузка баланса с сервера на Render
-        async function loadBalance() {
+        // Инициализация Adsgram Controller (замени ID блока на свой из Adsgram, если он другой)
+        const AdController = window.Adsgram?.init({ blockId: "54505" }); 
+
+        // Загрузка баланса с сервера
+        async function loadBalance(retries = 3) {
             try {
                 const res = await fetch(`https://prgrmchikstars-server.onrender.com/api/get-balance/${userId}`);
+                if (!res.ok) throw new Error("Сервер засыпает");
                 const data = await res.json();
                 document.getElementById('stars-count').innerText = data.balance;
             } catch(e) {
-                console.log("Ошибка загрузки баланса:", e);
+                if (retries > 0) {
+                    setTimeout(() => loadBalance(retries - 1), 3000);
+                } else {
+                    document.getElementById('stars-count').innerText = "0";
+                }
             }
         }
 
-        // Показ рекламы Monetag
-        function watchAd() {
-            if (typeof show_12060382 === 'function') {
-                show_12060382().then(() => {
-                    // Запрос на сервер для начисления звезды
-                    fetch(`https://prgrmchikstars-server.onrender.com/api/adsgram-reward?userid=${userId}`)
-                        .then(() => {
-                            setTimeout(loadBalance, 1500);
-                            tg.showAlert("Реклама просмотрена! +1 Star зачислено ⭐");
-                        })
-                        .catch(err => {
-                            console.error("Ошибка сервера:", err);
-                            tg.showAlert("Реклама просмотрена, но сервер не ответил.");
-                        });
-                }).catch((error) => {
-                    tg.showAlert("Реклама была закрыта или недоступна.");
+        // Отправка запроса на зачисление награды
+        function sendReward(attempts = 3) {
+            fetch(`https://prgrmchikstars-server.onrender.com/api/adsgram-reward?userid=${userId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Сервер не ответил");
+                    return res.text();
+                })
+                .then(() => {
+                    setTimeout(loadBalance, 1000);
+                    tg.showAlert("Реклама просмотрена! +1 Star зачислено ⭐");
+                })
+                .catch(err => {
+                    if (attempts > 0) {
+                        setTimeout(() => sendReward(attempts - 1), 2000);
+                    } else {
+                        tg.showAlert("Награда зачислится при следующем обновлении баланса!");
+                    }
+                });
+        }
+
+        // 1. Просмотр Adsgram
+        function watchAdsgram() {
+            if (AdController) {
+                AdController.show().then((result) => {
+                    // Успешный просмотр
+                    sendReward();
+                }).catch((result) => {
+                    tg.showAlert("Реклама Adsgram недоступна или была закрыта.");
                 });
             } else {
-                tg.showAlert("Рекламный модуль еще загружается. Попробуй через пару секунд.");
+                tg.showAlert("Модуль Adsgram не загрузился.");
+            }
+        }
+
+        // 2. Просмотр Monetag
+        function watchMonetag() {
+            if (typeof show_12060382 === 'function') {
+                show_12060382().then(() => {
+                    sendReward();
+                }).catch((error) => {
+                    tg.showAlert("Реклама Monetag была закрыта или недоступна.");
+                });
+            } else {
+                tg.showAlert("Модуль Monetag еще загружается...");
             }
         }
 
         function withdraw() {
-            const currentBalance = parseInt(document.getElementById('stars-count').innerText);
+            const currentBalance = parseInt(document.getElementById('stars-count').innerText) || 0;
             if (currentBalance < 15) {
                 tg.showAlert("Минимальная сумма вывода — 15 Stars ⭐");
             } else {
-                tg.showAlert("Заявка на вывод отправлена! Ожидай начисления.");
+                tg.showAlert("Заявка на вывод отправлена!");
             }
         }
 
+        // Автозагрузка баланса при запуске
         loadBalance();
     </script>
 </body>
 </html>
- 
